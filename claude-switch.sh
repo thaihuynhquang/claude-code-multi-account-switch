@@ -11,9 +11,17 @@ mkdir -p "$BACKUP_DIR"
 chmod 700 "$BACKUP_DIR"
 
 if [ -z "$CLAUDE_LOCKED" ]; then
-    LOCK_FILE="$BACKUP_DIR/.lock"
-    exec 9>"$LOCK_FILE"
-    flock -n 9 || { echo "[ERROR] Another instance is running"; exit 1; }
+    LOCK_DIR="$BACKUP_DIR/.lock.d"
+    if ! mkdir "$LOCK_DIR" 2>/dev/null; then
+        old_pid=$(cat "$LOCK_DIR/pid" 2>/dev/null)
+        if [ -n "$old_pid" ] && kill -0 "$old_pid" 2>/dev/null; then
+            echo "[ERROR] Another instance is running (PID $old_pid)"; exit 1
+        fi
+        rm -rf "$LOCK_DIR"
+        mkdir "$LOCK_DIR" || { echo "[ERROR] Cannot acquire lock"; exit 1; }
+    fi
+    echo $$ > "$LOCK_DIR/pid"
+    trap 'rm -rf "$LOCK_DIR"' EXIT
 fi
 
 # Prevent accidental git-tracking of token files
@@ -34,7 +42,7 @@ switch_account() {
     local current
     current=$(cat "$CURRENT_FILE" 2>/dev/null)
     if [ -n "$current" ] && [[ "$current" =~ ^[a-zA-Z0-9_-]+$ ]] && [ -f "$BACKUP_DIR/$current.json" ]; then
-        cp "$CLAUDE_CONFIG" "$BACKUP_DIR/$current.json"
+        [ -f "$CLAUDE_CONFIG" ] && cp "$CLAUDE_CONFIG" "$BACKUP_DIR/$current.json"
         chmod 600 "$BACKUP_DIR/$current.json"
         [ -d "$CLAUDE_DIR" ] && { rm -rf "$BACKUP_DIR/$current-dir"; cp -r "$CLAUDE_DIR" "$BACKUP_DIR/$current-dir"; }
     fi
@@ -55,6 +63,7 @@ case "$1" in
     save)
         [ -z "$2" ] && { echo "Usage: $0 save <account_name>"; exit 1; }
         validate_name "$2"
+        [ -f "$CLAUDE_CONFIG" ] || { echo "[ERROR] $CLAUDE_CONFIG not found. Run 'claude login' first"; exit 1; }
         cp "$CLAUDE_CONFIG" "$BACKUP_DIR/$2.json"
         chmod 600 "$BACKUP_DIR/$2.json"
         [ -d "$CLAUDE_DIR" ] && { rm -rf "$BACKUP_DIR/$2-dir"; cp -r "$CLAUDE_DIR" "$BACKUP_DIR/$2-dir"; }

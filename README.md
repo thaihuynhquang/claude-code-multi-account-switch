@@ -6,7 +6,6 @@ Quickly switch between multiple Claude Code accounts.
 
 - bash or zsh
 - Python 3 (standard library only, no `pip install` needed)
-- `flock` (pre-installed on macOS and Linux)
 
 ## Installation
 

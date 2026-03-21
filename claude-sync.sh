@@ -6,9 +6,17 @@ BACKUP_DIR="$HOME/.claude-accounts"
 CLAUDE_DIR="$HOME/.claude"
 
 mkdir -p "$BACKUP_DIR"
-LOCK_FILE="$BACKUP_DIR/.lock"
-exec 9>"$LOCK_FILE"
-flock -n 9 || { echo "[ERROR] Another instance is running"; exit 1; }
+LOCK_DIR="$BACKUP_DIR/.lock.d"
+if ! mkdir "$LOCK_DIR" 2>/dev/null; then
+    old_pid=$(cat "$LOCK_DIR/pid" 2>/dev/null)
+    if [ -n "$old_pid" ] && kill -0 "$old_pid" 2>/dev/null; then
+        echo "[ERROR] Another instance is running (PID $old_pid)"; exit 1
+    fi
+    rm -rf "$LOCK_DIR"
+    mkdir "$LOCK_DIR" || { echo "[ERROR] Cannot acquire lock"; exit 1; }
+fi
+echo $$ > "$LOCK_DIR/pid"
+trap 'rm -rf "$LOCK_DIR"' EXIT
 
 sync_cross() {
     # Collect all sessions from all accounts + current

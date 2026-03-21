@@ -13,8 +13,9 @@ else
     RC_FILE="$HOME/.bashrc"
 fi
 
-# Add aliases — use printf %q to prevent command injection if path contains shell metacharacters
-safe_dir=$(printf '%q' "$DIR")
+# Add aliases — single quotes protect all special chars in the path
+# Handle literal single quotes in the path via '"'"' substitution
+safe_dir="${DIR//\'/\'\"\'\"\'}"
 grep -q "claude-switch=" "$RC_FILE" || echo "alias claude-switch='${safe_dir}/claude-switch.sh'" >> "$RC_FILE"
 grep -q "claude-sync=" "$RC_FILE" || echo "alias claude-sync='${safe_dir}/claude-sync.sh'" >> "$RC_FILE"
 grep -q "claude-next=" "$RC_FILE" || echo "alias claude-next='${safe_dir}/claude-next.sh'" >> "$RC_FILE"

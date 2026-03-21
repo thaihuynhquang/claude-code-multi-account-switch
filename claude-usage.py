@@ -112,13 +112,13 @@ def main():
         print("[ERROR] No accounts found")
         return
     
-    # Save current index
-    current_idx = None
-    idx_file = os.path.join(BACKUP_DIR, ".current_index")
-    if os.path.exists(idx_file):
-        with open(idx_file) as f:
-            current_idx = f.read().strip()
-    
+    # Save current account name for restore
+    current_file = os.path.join(BACKUP_DIR, ".current")
+    original_account = None
+    if os.path.exists(current_file):
+        with open(current_file) as f:
+            original_account = f.read().strip()
+
     for name in sorted(accounts):
         print(f"--- {name} ---")
         switch_account(name)
@@ -135,14 +135,9 @@ def main():
             print(f"  Error: {e}")
         print()
     
-    # Restore
-    if current_idx and accounts:
-        try:
-            idx = int(current_idx)
-            if 0 <= idx < len(accounts):
-                switch_account(sorted(accounts)[idx])
-        except (ValueError, IndexError):
-            pass
+    # Restore original account
+    if original_account:
+        switch_account(original_account)
 
 if __name__ == "__main__":
     main()
