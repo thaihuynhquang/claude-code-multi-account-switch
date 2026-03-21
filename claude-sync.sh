@@ -5,9 +5,15 @@
 BACKUP_DIR="$HOME/.claude-accounts"
 CLAUDE_DIR="$HOME/.claude"
 
+mkdir -p "$BACKUP_DIR"
+LOCK_FILE="$BACKUP_DIR/.lock"
+exec 9>"$LOCK_FILE"
+flock -n 9 || { echo "[ERROR] Another instance is running"; exit 1; }
+
 sync_cross() {
     # Collect all sessions from all accounts + current
     tmp=$(mktemp -d)
+    chmod 700 "$tmp"
     
     # From current account
     [ -d "$CLAUDE_DIR/projects" ] && cp -r "$CLAUDE_DIR/projects"/* "$tmp/" 2>/dev/null

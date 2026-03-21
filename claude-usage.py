@@ -53,14 +53,14 @@ def get_usage():
         # Send Esc to exit
         try:
             os.write(master_fd, b"\x1b")
-        except:
+        except OSError:
             pass
         
     finally:
         process.terminate()
         try:
             process.wait(timeout=2)
-        except:
+        except Exception:
             process.kill()
         os.close(master_fd)
     
@@ -141,7 +141,7 @@ def main():
             idx = int(current_idx)
             if 0 <= idx < len(accounts):
                 switch_account(sorted(accounts)[idx])
-        except:
+        except (ValueError, IndexError):
             pass
 
 if __name__ == "__main__":

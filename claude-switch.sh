@@ -5,29 +5,46 @@
 CLAUDE_DIR="$HOME/.claude"
 CLAUDE_CONFIG="$HOME/.claude.json"
 BACKUP_DIR="$HOME/.claude-accounts"
+CURRENT_FILE="$BACKUP_DIR/.current"
 
 mkdir -p "$BACKUP_DIR"
+chmod 700 "$BACKUP_DIR"
+
+if [ -z "$CLAUDE_LOCKED" ]; then
+    LOCK_FILE="$BACKUP_DIR/.lock"
+    exec 9>"$LOCK_FILE"
+    flock -n 9 || { echo "[ERROR] Another instance is running"; exit 1; }
+fi
+
+# Prevent accidental git-tracking of token files
+[ -f "$BACKUP_DIR/.gitignore" ] || echo "*" > "$BACKUP_DIR/.gitignore"
+
+validate_name() {
+    [[ "$1" =~ ^[a-zA-Z0-9_-]+$ ]] || {
+        echo "[ERROR] Invalid account name '$1'. Use only letters, numbers, _ and -"
+        exit 1
+    }
+}
 
 switch_account() {
     local account="$1"
-    
-    # Auto-save current account
-    if [ -f "$CLAUDE_CONFIG" ]; then
-        for f in "$BACKUP_DIR"/*.json; do
-            [ -f "$f" ] || continue
-            name=$(basename "$f" .json)
-            if cmp -s "$CLAUDE_CONFIG" "$f" 2>/dev/null; then
-                cp "$CLAUDE_CONFIG" "$f"
-                [ -d "$CLAUDE_DIR" ] && { rm -rf "$BACKUP_DIR/$name-dir"; cp -r "$CLAUDE_DIR" "$BACKUP_DIR/$name-dir"; }
-                break
-            fi
-        done
+    validate_name "$account"
+
+    # Auto-save current account using state file
+    local current
+    current=$(cat "$CURRENT_FILE" 2>/dev/null)
+    if [ -n "$current" ] && [[ "$current" =~ ^[a-zA-Z0-9_-]+$ ]] && [ -f "$BACKUP_DIR/$current.json" ]; then
+        cp "$CLAUDE_CONFIG" "$BACKUP_DIR/$current.json"
+        chmod 600 "$BACKUP_DIR/$current.json"
+        [ -d "$CLAUDE_DIR" ] && { rm -rf "$BACKUP_DIR/$current-dir"; cp -r "$CLAUDE_DIR" "$BACKUP_DIR/$current-dir"; }
     fi
-    
+
     # Switch
     if [ -f "$BACKUP_DIR/$account.json" ]; then
         cp "$BACKUP_DIR/$account.json" "$CLAUDE_CONFIG"
+        chmod 600 "$CLAUDE_CONFIG"
         [ -d "$BACKUP_DIR/$account-dir" ] && { rm -rf "$CLAUDE_DIR"; cp -r "$BACKUP_DIR/$account-dir" "$CLAUDE_DIR"; }
+        echo "$account" > "$CURRENT_FILE"
         echo "[OK] Switched to $account"
     else
         echo "[ERROR] Account '$account' not found. Save it first with: $0 save $account"
@@ -37,25 +54,38 @@ switch_account() {
 case "$1" in
     save)
         [ -z "$2" ] && { echo "Usage: $0 save <account_name>"; exit 1; }
+        validate_name "$2"
         cp "$CLAUDE_CONFIG" "$BACKUP_DIR/$2.json"
+        chmod 600 "$BACKUP_DIR/$2.json"
         [ -d "$CLAUDE_DIR" ] && { rm -rf "$BACKUP_DIR/$2-dir"; cp -r "$CLAUDE_DIR" "$BACKUP_DIR/$2-dir"; }
+        echo "$2" > "$CURRENT_FILE"
         echo "[OK] Saved as $2"
         ;;
     list)
         echo "Accounts:"
-        for f in "$BACKUP_DIR"/*.json; do [ -f "$f" ] && echo "  - $(basename "$f" .json)"; done
+        for f in "$BACKUP_DIR"/*.json; do
+            [ -f "$f" ] || continue
+            name=$(basename "$f" .json)
+            [[ "$name" == .* ]] && continue
+            echo "  - $name"
+        done
         ;;
     status)
-        for f in "$BACKUP_DIR"/*.json; do
-            [ -f "$f" ] && cmp -s "$CLAUDE_CONFIG" "$f" 2>/dev/null && { echo "[OK] Current: $(basename "$f" .json)"; exit 0; }
-        done
-        echo "[?] Unknown account"
+        current=$(cat "$CURRENT_FILE" 2>/dev/null)
+        if [ -n "$current" ] && [[ "$current" =~ ^[a-zA-Z0-9_-]+$ ]]; then
+            echo "[OK] Current: $current"
+        else
+            echo "[?] Unknown account"
+        fi
         ;;
     remove)
         [ -z "$2" ] && { echo "Usage: $0 remove <account_name>"; exit 1; }
+        validate_name "$2"
         [ ! -f "$BACKUP_DIR/$2.json" ] && { echo "[ERROR] Account '$2' not found"; exit 1; }
         rm -f "$BACKUP_DIR/$2.json"
         rm -rf "$BACKUP_DIR/$2-dir"
+        current=$(cat "$CURRENT_FILE" 2>/dev/null)
+        [ "$current" = "$2" ] && rm -f "$CURRENT_FILE"
         echo "[OK] Removed $2"
         ;;
     ""|help|-h|--help)
