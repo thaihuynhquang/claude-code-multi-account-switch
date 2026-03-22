@@ -21,6 +21,7 @@ Aliases created:
 - `claude-sync` → `claude-sync.sh`
 - `claude-next` → `claude-next.sh`
 - `claude-usage` → `python3 claude-usage.py`
+- `claude-config-sync` → `claude-config-sync.sh`
 
 ## Usage
 
@@ -68,6 +69,31 @@ claude-usage            # Show usage for all accounts
 ```
 <img width="880" height="306" alt="Screenshot from 2025-12-22 22-51-49" src="https://github.com/user-attachments/assets/d29e01ba-18d5-4b49-aa94-2da9d47ed362" />
 
+## Sync Config Between Accounts
+
+Share skills, agents, commands, settings, memory, and plugins across all accounts.
+
+```bash
+claude-config-sync    # Sync all config from current account to all others
+```
+
+What gets synced:
+
+| Category | Path |
+|----------|------|
+| Custom agents | `~/.claude/agents/` |
+| Custom skills | `~/.claude/skills/` |
+| Custom commands | `~/.claude/commands/` |
+| Global memory | `~/.claude/memory/` |
+| Plugins | `~/.claude/plugins/` |
+| Settings | `~/.claude/settings.json` |
+| Local settings | `~/.claude/settings.local.json` |
+| Global instructions | `~/.claude/CLAUDE.md` |
+
+For directories, files are **merged** across all accounts (no agent or skill is lost). For single files, the **current account's version** is distributed to all others.
+
+> Note: session tokens are never touched by this command.
+
 ## Sync Sessions Between Accounts
 
 Share conversation history between all accounts so `claude --resume` works on any account.
@@ -109,7 +135,8 @@ git submodule update --init --recursive
 ./run_tests.sh next     # claude-next.sh
 ./run_tests.sh sync     # claude-sync.sh
 ./run_tests.sh init     # init.sh
-./run_tests.sh usage    # claude-usage.py (parse_usage only, no real claude binary needed)
+./run_tests.sh usage         # claude-usage.py (parse_usage only, no real claude binary needed)
+./run_tests.sh config-sync  # claude-config-sync.sh
 ```
 
 Tests run in a sandboxed `$HOME` (a temp directory per test) — your real `~/.claude.json` and `~/.claude-accounts/` are never touched.
