@@ -1,0 +1,9 @@
+Claude Code Usage
+
+Current session
+  45% used
+  Resets in 2 hours
+
+Current week
+  78% used
+  Resets Monday 09:00
