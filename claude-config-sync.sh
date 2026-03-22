@@ -18,7 +18,8 @@ if ! mkdir "$LOCK_DIR" 2>/dev/null; then
     mkdir "$LOCK_DIR" || { echo "[ERROR] Cannot acquire lock"; exit 1; }
 fi
 echo $$ > "$LOCK_DIR/pid"
-trap 'rm -rf "$LOCK_DIR"' EXIT
+TMPFILES=()
+trap 'rm -rf "$LOCK_DIR" "${TMPFILES[@]}"' EXIT
 
 # Directories to merge across all accounts (current account wins conflicts)
 CONFIG_DIRS="agents skills commands memory plugins"
@@ -29,27 +30,28 @@ CONFIG_FILES="settings.json settings.local.json CLAUDE.md"
 sync_dir() {
     local name="$1"   # e.g. "agents"
     local tmp
-    tmp=$(mktemp -d)
+    tmp=$(mktemp -d "$BACKUP_DIR/.tmp.XXXXXX")
+    TMPFILES+=("$tmp")
     chmod 700 "$tmp"
 
-    # Current account first (wins conflicts via cp -rn below)
-    [ -d "$CLAUDE_DIR/$name" ] && cp -r "$CLAUDE_DIR/$name/." "$tmp/" 2>/dev/null
+    # Current account first (wins conflicts via cp -rPn below)
+    [ -d "$CLAUDE_DIR/$name" ] && cp -rP "$CLAUDE_DIR/$name/." "$tmp/" 2>/dev/null
 
     # Saved accounts (no overwrite)
     for account_dir in "$BACKUP_DIR"/*-dir; do
-        [ -d "$account_dir/$name" ] && cp -rn "$account_dir/$name/." "$tmp/" 2>/dev/null
+        [ -d "$account_dir/$name" ] && cp -rPn "$account_dir/$name/." "$tmp/" 2>/dev/null
     done
 
     if [ -n "$(ls -A "$tmp" 2>/dev/null)" ]; then
         # To current account
         mkdir -p "$CLAUDE_DIR/$name"
-        cp -r "$tmp/." "$CLAUDE_DIR/$name/"
+        cp -rP "$tmp/." "$CLAUDE_DIR/$name/"
 
         # To all saved accounts
         for account_dir in "$BACKUP_DIR"/*-dir; do
             [ -d "$account_dir" ] || continue
             mkdir -p "$account_dir/$name"
-            cp -r "$tmp/." "$account_dir/$name/"
+            cp -rP "$tmp/." "$account_dir/$name/"
         done
     fi
 

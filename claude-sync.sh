@@ -17,32 +17,35 @@ if ! mkdir "$LOCK_DIR" 2>/dev/null; then
     mkdir "$LOCK_DIR" || { echo "[ERROR] Cannot acquire lock"; exit 1; }
 fi
 echo $$ > "$LOCK_DIR/pid"
-trap 'rm -rf "$LOCK_DIR"' EXIT
+TMPFILES=()
+trap 'rm -rf "$LOCK_DIR" "${TMPFILES[@]}"' EXIT
 
 sync_cross() {
     # Collect all sessions from all accounts + current
-    tmp=$(mktemp -d)
+    local tmp
+    tmp=$(mktemp -d "$BACKUP_DIR/.tmp.XXXXXX")
+    TMPFILES+=("$tmp")
     chmod 700 "$tmp"
     
     # From current account
-    [ -d "$CLAUDE_DIR/projects" ] && cp -r "$CLAUDE_DIR/projects"/* "$tmp/" 2>/dev/null
+    [ -d "$CLAUDE_DIR/projects" ] && cp -rP "$CLAUDE_DIR/projects"/* "$tmp/" 2>/dev/null
     
     # From all saved accounts
     for f in "$BACKUP_DIR"/*-dir/projects; do
-        [ -d "$f" ] && cp -rn "$f"/* "$tmp/" 2>/dev/null
+        [ -d "$f" ] && cp -rPn "$f"/* "$tmp/" 2>/dev/null
     done
     
     # Distribute to all
     [ -d "$tmp" ] && [ "$(ls -A "$tmp" 2>/dev/null)" ] && {
         # To current
         mkdir -p "$CLAUDE_DIR/projects"
-        cp -r "$tmp"/* "$CLAUDE_DIR/projects/"
+        cp -rP "$tmp"/* "$CLAUDE_DIR/projects/"
         
         # To all saved accounts
         for f in "$BACKUP_DIR"/*-dir; do
             [ -d "$f" ] || continue
             mkdir -p "$f/projects"
-            cp -r "$tmp"/* "$f/projects/"
+            cp -rP "$tmp"/* "$f/projects/"
             echo "[OK] Synced: $(basename "$f" -dir)"
         done
     }
