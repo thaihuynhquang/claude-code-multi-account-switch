@@ -4,8 +4,7 @@ Quickly switch between multiple Claude Code accounts.
 
 ## Requirements
 
-- bash or zsh
-- Python 3 (standard library only, no `pip install` needed)
+- bash 4.0+ or zsh (macOS ships bash 3.2 — use `brew install bash` for `mapfile` support, or use zsh)
 
 ## Installation
 
@@ -134,13 +133,18 @@ git submodule update --init --recursive
 
 Tests run in a sandboxed `$HOME` (a temp directory per test) — your real `~/.claude.json` and `~/.claude-accounts/` are never touched.
 
-## Storage
+## Security
 
 All account data is stored at `~/.claude-accounts/` with restricted permissions (`700` on the directory, `600` on token files). A `.gitignore` is automatically created inside to prevent accidental commits.
 
-## Security
-
-- Account names are validated to `[a-zA-Z0-9_-]` — no path traversal via state files
-- Install path is shell-escaped with `printf %q` before writing to RC files
-- Concurrent script executions are serialized with a `mkdir`-based lock to prevent config corruption (macOS-compatible — no `flock` required)
-- Token files are never synced or shared between accounts
+| Protection | Detail |
+|------------|--------|
+| **umask 077** | All scripts set `umask 077` on startup so every file created during a copy or temp operation is private before `chmod` is applied — no brief world-readable window on token files. |
+| **Atomic account switch** | `~/.claude` and `<account>-dir` are never absent during a switch. New data is fully copied to a temp path first, then the old directory is removed, then `mv` installs the new one. A killed script leaves either the old or the new state intact, never nothing. |
+| **Symlink guards** | Before every `cp` or `rm -rf` on account paths, the script verifies the target is not a symlink (`[ ! -L ]`). All copies use `cp -rP` to preserve symlinks rather than follow them. |
+| **Lock ownership check** | `CLAUDE_LOCKED=1` (used by `claude-next.sh` to avoid deadlock) is only honoured when `$PPID` matches the PID written in the lock file. Arbitrary external processes setting this variable are rejected with an error. |
+| **Stale lock recovery** | A stale lock (dead PID) is recovered by overwriting the pid file in-place rather than `rm -rf` + `mkdir`, closing the TOCTOU window where two racing processes could both acquire the lock. |
+| **Safe temp dirs** | Sync temp directories are created inside `~/.claude-accounts/` (already `chmod 700`) instead of world-listable `/tmp`, and are registered in the `EXIT` trap so they are always cleaned up even on SIGTERM/SIGINT. |
+| **Name validation** | Account names are validated to `[a-zA-Z0-9_-]` — no path traversal via state files. |
+| **RC file safety** | `init.sh` rejects install paths containing control characters before writing to the RC file, and uses `grep -qF "alias NAME="` for precise duplicate detection. |
+| **Token isolation** | Token files (`*.json`) are never touched by `claude-sync` or `claude-config-sync` — only conversation history and config directories are shared. |
