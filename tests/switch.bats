@@ -228,11 +228,18 @@ SWITCH="$PROJECT_ROOT/claude-switch.sh"
     assert_output --partial "[ERROR] Another instance is running"
 }
 
-@test "lock: CLAUDE_LOCKED=1 bypasses lock check" {
+@test "lock: CLAUDE_LOCKED=1 from lock holder (parent PID matches) succeeds" {
     mkdir "$LOCK_DIR"
     echo "$$" > "$LOCK_DIR/pid"
+    CLAUDE_LOCKED=1 bash "$SWITCH" save work
+}
+
+@test "lock: CLAUDE_LOCKED=1 from non-lock-holder fails" {
+    mkdir "$LOCK_DIR"
+    echo "99998" > "$LOCK_DIR/pid"
     run env CLAUDE_LOCKED=1 bash "$SWITCH" save work
-    assert_success
+    assert_failure
+    assert_output --partial "not the lock holder"
 }
 
 # ---------------------------------------------------------------------------

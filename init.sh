@@ -4,6 +4,13 @@
 
 DIR="$(cd "$(dirname "$0")" && pwd)"
 
+case "$DIR" in
+    *$'\n'*|*$'\r'*|*[[:cntrl:]]*)
+        echo "[ERROR] Installation path contains control characters; aborting." >&2
+        exit 1
+        ;;
+esac
+
 chmod +x "$DIR/claude-switch.sh" "$DIR/claude-sync.sh" "$DIR/claude-next.sh" "$DIR/claude-config-sync.sh"
 
 # Detect shell and pick the right rc file
@@ -16,10 +23,10 @@ fi
 # Add aliases — single quotes protect all special chars in the path
 # Handle literal single quotes in the path via '"'"' substitution
 safe_dir="${DIR//\'/\'\"\'\"\'}"
-grep -q "claude-switch=" "$RC_FILE" || echo "alias claude-switch='${safe_dir}/claude-switch.sh'" >> "$RC_FILE"
-grep -q "claude-sync=" "$RC_FILE" || echo "alias claude-sync='${safe_dir}/claude-sync.sh'" >> "$RC_FILE"
-grep -q "claude-next=" "$RC_FILE" || echo "alias claude-next='${safe_dir}/claude-next.sh'" >> "$RC_FILE"
-grep -q "claude-config-sync=" "$RC_FILE" || echo "alias claude-config-sync='${safe_dir}/claude-config-sync.sh'" >> "$RC_FILE"
+grep -qF "alias claude-switch=" "$RC_FILE" || echo "alias claude-switch='${safe_dir}/claude-switch.sh'" >> "$RC_FILE"
+grep -qF "alias claude-sync=" "$RC_FILE" || echo "alias claude-sync='${safe_dir}/claude-sync.sh'" >> "$RC_FILE"
+grep -qF "alias claude-next=" "$RC_FILE" || echo "alias claude-next='${safe_dir}/claude-next.sh'" >> "$RC_FILE"
+grep -qF "alias claude-config-sync=" "$RC_FILE" || echo "alias claude-config-sync='${safe_dir}/claude-config-sync.sh'" >> "$RC_FILE"
 
 echo "Installed! Aliases written to $RC_FILE"
 echo ""

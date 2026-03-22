@@ -11,18 +11,22 @@ CURRENT_FILE="$BACKUP_DIR/.current"
 mkdir -p "$BACKUP_DIR"
 chmod 700 "$BACKUP_DIR"
 
+LOCK_DIR="$BACKUP_DIR/.lock.d"
 if [ -z "$CLAUDE_LOCKED" ]; then
-    LOCK_DIR="$BACKUP_DIR/.lock.d"
     if ! mkdir "$LOCK_DIR" 2>/dev/null; then
         old_pid=$(cat "$LOCK_DIR/pid" 2>/dev/null)
         if [ -n "$old_pid" ] && kill -0 "$old_pid" 2>/dev/null; then
             echo "[ERROR] Another instance is running (PID $old_pid)"; exit 1
         fi
-        rm -rf "$LOCK_DIR"
-        mkdir "$LOCK_DIR" || { echo "[ERROR] Cannot acquire lock"; exit 1; }
+        echo $$ > "$LOCK_DIR/pid" || { echo "[ERROR] Cannot acquire lock"; exit 1; }
     fi
     echo $$ > "$LOCK_DIR/pid"
     trap 'rm -rf "$LOCK_DIR"' EXIT
+else
+    lock_pid=$(cat "$LOCK_DIR/pid" 2>/dev/null)
+    if [ -z "$lock_pid" ] || [ "$PPID" != "$lock_pid" ]; then
+        echo "[ERROR] $(basename "$0"): CLAUDE_LOCKED set but parent (PID $PPID) is not the lock holder"; exit 1
+    fi
 fi
 
 # Prevent accidental git-tracking of token files

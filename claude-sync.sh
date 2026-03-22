@@ -13,8 +13,7 @@ if ! mkdir "$LOCK_DIR" 2>/dev/null; then
     if [ -n "$old_pid" ] && kill -0 "$old_pid" 2>/dev/null; then
         echo "[ERROR] Another instance is running (PID $old_pid)"; exit 1
     fi
-    rm -rf "$LOCK_DIR"
-    mkdir "$LOCK_DIR" || { echo "[ERROR] Cannot acquire lock"; exit 1; }
+    echo $$ > "$LOCK_DIR/pid" || { echo "[ERROR] Cannot acquire lock"; exit 1; }
 fi
 echo $$ > "$LOCK_DIR/pid"
 TMPFILES=()

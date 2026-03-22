@@ -14,18 +14,17 @@ if ! mkdir "$LOCK_DIR" 2>/dev/null; then
     if [ -n "$old_pid" ] && kill -0 "$old_pid" 2>/dev/null; then
         echo "[ERROR] Another instance is running (PID $old_pid)"; exit 1
     fi
-    rm -rf "$LOCK_DIR"
-    mkdir "$LOCK_DIR" || { echo "[ERROR] Cannot acquire lock"; exit 1; }
+    echo $$ > "$LOCK_DIR/pid" || { echo "[ERROR] Cannot acquire lock"; exit 1; }
 fi
 echo $$ > "$LOCK_DIR/pid"
 TMPFILES=()
 trap 'rm -rf "$LOCK_DIR" "${TMPFILES[@]}"' EXIT
 
 # Directories to merge across all accounts (current account wins conflicts)
-CONFIG_DIRS="agents skills commands memory plugins"
+CONFIG_DIRS=(agents skills commands memory plugins)
 
 # Single files to push from the current account to all saved accounts
-CONFIG_FILES="settings.json settings.local.json CLAUDE.md"
+CONFIG_FILES=(settings.json settings.local.json CLAUDE.md)
 
 sync_dir() {
     local name="$1"   # e.g. "agents"
@@ -79,11 +78,11 @@ sync_config() {
         exit 1
     fi
 
-    for name in $CONFIG_DIRS; do
+    for name in "${CONFIG_DIRS[@]}"; do
         sync_dir "$name"
     done
 
-    for file in $CONFIG_FILES; do
+    for file in "${CONFIG_FILES[@]}"; do
         sync_file "$file"
     done
 

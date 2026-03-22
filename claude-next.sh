@@ -12,8 +12,7 @@ if ! mkdir "$LOCK_DIR" 2>/dev/null; then
     if [ -n "$old_pid" ] && kill -0 "$old_pid" 2>/dev/null; then
         echo "[ERROR] Another instance is running (PID $old_pid)"; exit 1
     fi
-    rm -rf "$LOCK_DIR"
-    mkdir "$LOCK_DIR" || { echo "[ERROR] Cannot acquire lock"; exit 1; }
+    echo $$ > "$LOCK_DIR/pid" || { echo "[ERROR] Cannot acquire lock"; exit 1; }
 fi
 echo $$ > "$LOCK_DIR/pid"
 trap 'rm -rf "$LOCK_DIR"' EXIT
@@ -28,7 +27,7 @@ for f in "$BACKUP_DIR"/*.json; do
 done
 
 # Sort array for deterministic order
-IFS=$'\n' accounts=($(sort <<<"${accounts[*]}")); unset IFS
+mapfile -t accounts < <(printf '%s\n' "${accounts[@]}" | sort)
 
 total=${#accounts[@]}
 [ $total -eq 0 ] && { echo "[ERROR] No accounts found"; exit 1; }
