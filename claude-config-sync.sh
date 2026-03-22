@@ -1,4 +1,5 @@
 #!/bin/bash
+umask 077
 
 # Claude Config Sync - Cross-sync skills, agents, commands, settings, memory,
 # and plugins across ALL saved accounts.

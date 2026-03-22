@@ -1,4 +1,5 @@
 #!/bin/bash
+umask 077
 
 # Claude Session Sync - Cross-sync sessions between ALL accounts
 

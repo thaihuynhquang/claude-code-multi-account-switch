@@ -1,4 +1,5 @@
 #!/bin/bash
+umask 077
 
 # Claude Next Account - Switch to next account
 

@@ -1,4 +1,5 @@
 #!/bin/bash
+umask 077
 
 # Claude Code Multi-Account Switcher
 
