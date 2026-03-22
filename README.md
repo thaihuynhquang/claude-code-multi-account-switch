@@ -93,6 +93,27 @@ claude-switch account2
 claude --resume
 ```
 
+## Testing
+
+The test suite uses [bats-core](https://github.com/bats-core/bats-core) (included as a git submodule — no global install needed).
+
+```bash
+# First time: initialize submodules
+git submodule update --init --recursive
+
+# Run all tests (60 tests across all scripts)
+./run_tests.sh
+
+# Run a single suite
+./run_tests.sh switch   # claude-switch.sh
+./run_tests.sh next     # claude-next.sh
+./run_tests.sh sync     # claude-sync.sh
+./run_tests.sh init     # init.sh
+./run_tests.sh usage    # claude-usage.py (parse_usage only, no real claude binary needed)
+```
+
+Tests run in a sandboxed `$HOME` (a temp directory per test) — your real `~/.claude.json` and `~/.claude-accounts/` are never touched.
+
 ## Storage
 
 All account data is stored at `~/.claude-accounts/` with restricted permissions (`700` on the directory, `600` on token files). A `.gitignore` is automatically created inside to prevent accidental commits.
@@ -101,5 +122,5 @@ All account data is stored at `~/.claude-accounts/` with restricted permissions 
 
 - Account names are validated to `[a-zA-Z0-9_-]` — no path traversal via state files
 - Install path is shell-escaped with `printf %q` before writing to RC files
-- Concurrent script executions are serialized with `flock` to prevent config corruption
+- Concurrent script executions are serialized with a `mkdir`-based lock to prevent config corruption (macOS-compatible — no `flock` required)
 - Token files are never synced or shared between accounts
