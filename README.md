@@ -20,7 +20,6 @@ Aliases created:
 - `claude-switch` → `claude-switch.sh`
 - `claude-sync` → `claude-sync.sh`
 - `claude-next` → `claude-next.sh`
-- `claude-usage` → `python3 claude-usage.py`
 - `claude-config-sync` → `claude-config-sync.sh`
 
 ## Usage
@@ -63,11 +62,6 @@ claude-switch remove work  # Remove a saved account
 claude-next             # Switch to next account (round-robin)
 ```
 <img width="727" height="63" alt="Screenshot from 2025-12-22 22-50-34" src="https://github.com/user-attachments/assets/8cbcbe21-c347-4adc-aa66-cfbf6a5563b3" />
-
-```bash
-claude-usage            # Show usage for all accounts
-```
-<img width="880" height="306" alt="Screenshot from 2025-12-22 22-51-49" src="https://github.com/user-attachments/assets/d29e01ba-18d5-4b49-aa94-2da9d47ed362" />
 
 ## Sync Config Between Accounts
 
@@ -127,7 +121,7 @@ The test suite uses [bats-core](https://github.com/bats-core/bats-core) (include
 # First time: initialize submodules
 git submodule update --init --recursive
 
-# Run all tests (60 tests across all scripts)
+# Run all tests
 ./run_tests.sh
 
 # Run a single suite
@@ -135,7 +129,6 @@ git submodule update --init --recursive
 ./run_tests.sh next     # claude-next.sh
 ./run_tests.sh sync     # claude-sync.sh
 ./run_tests.sh init     # init.sh
-./run_tests.sh usage         # claude-usage.py (parse_usage only, no real claude binary needed)
 ./run_tests.sh config-sync  # claude-config-sync.sh
 ```
 

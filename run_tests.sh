@@ -17,7 +17,6 @@ case "$SUITE" in
     next)        exec "$BATS" "$SCRIPT_DIR/tests/next.bats" ;;
     sync)        exec "$BATS" "$SCRIPT_DIR/tests/sync.bats" ;;
     init)        exec "$BATS" "$SCRIPT_DIR/tests/init.bats" ;;
-    usage)       exec "$BATS" "$SCRIPT_DIR/tests/usage_parse.bats" ;;
     config-sync) exec "$BATS" "$SCRIPT_DIR/tests/config_sync.bats" ;;
     all)
         exec "$BATS" \
@@ -25,11 +24,10 @@ case "$SUITE" in
             "$SCRIPT_DIR/tests/next.bats" \
             "$SCRIPT_DIR/tests/sync.bats" \
             "$SCRIPT_DIR/tests/init.bats" \
-            "$SCRIPT_DIR/tests/usage_parse.bats" \
             "$SCRIPT_DIR/tests/config_sync.bats"
         ;;
     *)
-        echo "Usage: $0 [switch|next|sync|init|usage|config-sync|all]"
+        echo "Usage: $0 [switch|next|sync|init|config-sync|all]"
         exit 1
         ;;
 esac

@@ -2,9 +2,7 @@
 
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 FIXTURES_DIR="$PROJECT_ROOT/tests/fixtures"
-USAGE_PY="$PROJECT_ROOT/claude-usage.py"
-
-export PROJECT_ROOT FIXTURES_DIR USAGE_PY
+export PROJECT_ROOT FIXTURES_DIR
 
 load "$PROJECT_ROOT/tests/lib/bats-support/load.bash"
 load "$PROJECT_ROOT/tests/lib/bats-assert/load.bash"

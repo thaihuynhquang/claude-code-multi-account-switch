@@ -11,14 +11,13 @@ INIT="$PROJECT_ROOT/init.sh"
     grep -q "claude-switch=" "$HOME/.zshrc"
 }
 
-@test "init: writes all four aliases to .zshrc" {
+@test "init: writes all aliases to .zshrc" {
     touch "$HOME/.zshrc"
     run env ZSH_VERSION=5.9 SHELL=/bin/zsh bash "$INIT"
     assert_success
     grep -q "claude-switch=" "$HOME/.zshrc"
     grep -q "claude-sync="   "$HOME/.zshrc"
     grep -q "claude-next="   "$HOME/.zshrc"
-    grep -q "claude-usage="  "$HOME/.zshrc"
 }
 
 @test "init: writes aliases to .bashrc when bash detected" {

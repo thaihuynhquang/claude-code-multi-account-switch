@@ -1,9 +1,0 @@
-Claude Code Usage
-
-Current session
-  [32m45[0m% used
-  Resets in 3 hours
-
-Current week
-  [33m78[0m% used
-  Resets Monday 09:00
